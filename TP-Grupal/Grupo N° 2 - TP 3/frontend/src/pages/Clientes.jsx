@@ -1,10 +1,14 @@
-import React, { useState, } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import Sidebar from "../layout/sidebar";
 import MainContent from "../layout/maincontent";
 import DataTable from "../components/tables/datatable";
-import { addCliente, deleteCliente } from "../services/clientesService";
-import { useFetch } from "../hooks/useFetch";
+import {
+  getClientes,
+  addCliente,
+  updateCliente,
+  deleteCliente,
+} from "../services/clientesService";
 
 const PageContainer = styled.div`
   display: flex;
@@ -104,18 +108,38 @@ const ActionButton = styled.button`
 `;
 
 const Clientes = () => {
-  const { data: clientes, loading, error, refetch } = useFetch("http://localhost:5000/clientes");
-
+  const [clientes, setClientes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
-  const [nuevoCliente, setNuevoCliente] = useState({ nombre: "", telefono: "" });
+  const [nuevoCliente, setNuevoCliente] = useState({ name: "", phone: "" });
   const [busqueda, setBusqueda] = useState("");
+
+  // Cargar clientes al montar el componente
+  const loadClients = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getClientes();
+      setClientes(res);
+    } catch (err) {
+      console.error("Error al cargar clientes:", err);
+      setError("Error al cargar los clientes");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadClients();
+  }, []);
 
   const columns = [
     { header: "ID", accessor: "id", type: "text" },
-    { header: "Nombre", accessor: "nombre", type: "text" },
-    { header: "Teléfono", accessor: "telefono", type: "text" },
+    { header: "Nombre", accessor: "name", type: "text" },
+    { header: "Teléfono", accessor: "phone", type: "text" },
     { header: "Acciones", accessor: "acciones", type: "actions" },
   ];
 
@@ -132,18 +156,19 @@ const Clientes = () => {
 
   const handleAddCliente = async (e) => {
     e.preventDefault();
-    if (!nuevoCliente.nombre || !nuevoCliente.telefono) {
+    if (!nuevoCliente.name || !nuevoCliente.phone) {
       alert("Por favor completa todos los campos");
       return;
     }
 
     try {
       await addCliente(nuevoCliente);
-      refetch();
+      await loadClients();
       setShowModal(false);
-      setNuevoCliente({ nombre: "", telefono: "" });
+      setNuevoCliente({ name: "", phone: "" });
     } catch (error) {
       console.error("Error al agregar cliente:", error);
+      alert("Error al agregar cliente");
     }
   };
 
@@ -151,9 +176,10 @@ const Clientes = () => {
     if (!window.confirm("¿Seguro que deseas eliminar este cliente?")) return;
     try {
       await deleteCliente(id);
-      refetch();
+      await loadClients();
     } catch (error) {
       console.error("Error al eliminar cliente:", error);
+      alert("Error al eliminar cliente");
     }
   };
 
@@ -165,28 +191,28 @@ const Clientes = () => {
 
   const handleUpdateCliente = async (e) => {
     e.preventDefault();
-    if (!clienteSeleccionado.nombre || !clienteSeleccionado.telefono) {
+    if (!clienteSeleccionado.name || !clienteSeleccionado.phone) {
       alert("Por favor completa todos los campos");
       return;
     }
 
-    await fetch(`http://localhost:5000/clientes/${clienteSeleccionado.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(clienteSeleccionado),
-    });
-
-    refetch();
-    setShowModal(false);
-    setIsEditing(false);
-    setClienteSeleccionado(null);
+    try {
+      await updateCliente(clienteSeleccionado.id, clienteSeleccionado);
+      await loadClients();
+      setShowModal(false);
+      setIsEditing(false);
+      setClienteSeleccionado(null);
+    } catch (error) {
+      console.error("Error al actualizar cliente:", error);
+      alert("Error al actualizar cliente");
+    }
   };
 
   if (loading) return <p style={{ padding: "20px" }}>Cargando clientes...</p>;
   if (error) return <p style={{ color: "red" }}>Error: {error}</p>;
 
   const clientesFiltrados = clientes.filter((c) =>
-    c.nombre.toLowerCase().includes(busqueda.toLowerCase())
+    c.name.toLowerCase().includes(busqueda.toLowerCase())
   );
 
   const dataWithActions = clientesFiltrados.map((c) => ({
@@ -215,7 +241,7 @@ const Clientes = () => {
             onClick={() => {
               setShowModal(true);
               setIsEditing(false);
-              setNuevoCliente({ nombre: "", telefono: "" });
+              setNuevoCliente({ name: "", phone: "" });
             }}
           >
             <i className="fa-solid fa-plus"></i>
@@ -257,14 +283,14 @@ const Clientes = () => {
                 <input
                   type="text"
                   placeholder="Nombre del cliente"
-                  value={isEditing ? clienteSeleccionado.nombre : nuevoCliente.nombre}
+                  value={isEditing ? clienteSeleccionado.name : nuevoCliente.name}
                   onChange={(e) =>
                     isEditing
                       ? setClienteSeleccionado({
                           ...clienteSeleccionado,
-                          nombre: e.target.value,
+                          name: e.target.value,
                         })
-                      : setNuevoCliente({ ...nuevoCliente, nombre: e.target.value })
+                      : setNuevoCliente({ ...nuevoCliente, name: e.target.value })
                   }
                   style={{
                     padding: "10px",
@@ -275,14 +301,14 @@ const Clientes = () => {
                 <input
                   type="text"
                   placeholder="Teléfono"
-                  value={isEditing ? clienteSeleccionado.telefono : nuevoCliente.telefono}
+                  value={isEditing ? clienteSeleccionado.phone : nuevoCliente.phone}
                   onChange={(e) =>
                     isEditing
                       ? setClienteSeleccionado({
                           ...clienteSeleccionado,
-                          telefono: e.target.value,
+                          phone: e.target.value,
                         })
-                      : setNuevoCliente({ ...nuevoCliente, telefono: e.target.value })
+                      : setNuevoCliente({ ...nuevoCliente, phone: e.target.value })
                   }
                   style={{
                     padding: "10px",
