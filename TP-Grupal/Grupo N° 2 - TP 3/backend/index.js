@@ -6,10 +6,10 @@ import 'dotenv/config';
 import pool from './db/db.js';
 
 // Importación de Rutas 
-import authRoutes from './routes/auth.routes.js';
-import clientRoutes from './routes/client.routes.js';
-import productRoutes from './routes/product.routes.js';
-import saleRoutes from './routes/sale.routes.js';
+import authRoutes from './routes/authRoutes.js';
+import clientRoutes from './routes/clientRoutes.js';
+import productRoutes from './routes/productRoutes.js';
+import saleRoutes from './routes/saleRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;

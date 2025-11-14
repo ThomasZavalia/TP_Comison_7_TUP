@@ -1,22 +1,31 @@
-const API_URL = "http://localhost:5000/clientes";
+import api from './api.js';
 
-
+// GET - Obtener todos los clientes
 export const getClientes = async () => {
-  const res = await fetch(API_URL);
-  return await res.json();
+  const response = await api.get('/clients');
+  return response.data;
 };
 
+// GET - Obtener un cliente por ID
+export const getClienteById = async (id) => {
+  const response = await api.get(`/clients/${id}`);
+  return response.data;
+};
 
+// POST - Crear un nuevo cliente
 export const addCliente = async (nuevoCliente) => {
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(nuevoCliente),
-  });
-  return await res.json();
+  const response = await api.post('/clients', nuevoCliente);
+  return response.data;
 };
 
+// PUT - Actualizar un cliente
+export const updateCliente = async (id, clienteActualizado) => {
+  const response = await api.put(`/clients/${id}`, clienteActualizado);
+  return response.data;
+};
 
+// DELETE - Eliminar un cliente
 export const deleteCliente = async (id) => {
-  await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+  const response = await api.delete(`/clients/${id}`);
+  return response.data;
 };
